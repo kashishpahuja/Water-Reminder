@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+
+# Compiled distribution builds (installers and unpacked exe folders)
+dist/
+
+# Local OS files and logs
+.DS_Store
+Thumbs.db
+*.log
+
+# User-specific application data / local settings cache
+userData/
+*.local.json

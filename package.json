@@ -1,0 +1,30 @@
+{
+  "name": "water-reminder",
+  "version": "2.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "build": {
+    "appId": "com.water.reminder",
+    "productName": "Kashish - Water Reminder",
+    "files": [
+      "index.js",
+      "index.html",
+      "kashish.gif"
+    ],
+    "win": {
+      "target": "nsis"
+    }
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "electron": "^41.7.1",
+    "electron-builder": "^26.15.3"
+  }
+}

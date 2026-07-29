@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Water Reminder - Animation</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      user-select: none;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      pointer-events: none;
+    }
+
+    .anime-character-container {
+      position: absolute;
+      top: 50%;
+      right: 0;
+      transform: translateY(-50%) translateX(100%);
+      height: 300px;
+      width: auto;
+      z-index: 5;
+      pointer-events: none;
+      animation: slideIn 1s ease-out forwards;
+    }
+
+    .anime-character-container.exit {
+      animation: slideOut 1s ease-in forwards;
+    }
+
+    .anime-character-container img {
+      height: 100%;
+      width: auto;
+      object-fit: contain;
+      filter: drop-shadow(-15px 15px 20px rgba(0, 0, 0, 0.4));
+      pointer-events: none;
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 0;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.6);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+      pointer-events: auto;
+      z-index: 10;
+    }
+
+    .close-btn:hover {
+      background: rgba(255, 0, 0, 0.8);
+    }
+
+    @keyframes slideIn {
+      0% { transform: translateY(-50%) translateX(100%); }
+      100% { transform: translateY(-50%) translateX(0); }
+    }
+
+    @keyframes slideOut {
+      0% { transform: translateY(-50%) translateX(0); }
+      100% { transform: translateY(-50%) translateX(100%); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="anime-character-container" id="character">
+    <button class="close-btn" id="closeBtn">×</button>
+    <img id="reminderGif" src="kashish.gif" alt="Water Reminder">
+  </div>
+
+<script>
+    const { ipcRenderer } = require('electron');
+
+    ipcRenderer.invoke('get-settings').then((settings) => {
+      if (settings && settings.gifPath) {
+        document.getElementById('reminderGif').src = settings.gifPath;
+      }
+    }).catch((err) => {
+      console.error('Failed to load settings in view:', err);
+    });
+
+    const character = document.getElementById('character');
+
+    function closeReminder() {
+      // Prevent multiple click triggers if clicked twice quickly
+      if (character.classList.contains('exit')) return;
+      
+      character.classList.add('exit');
+      setTimeout(() => {
+        window.close();
+      }, 1000); 
+    }
+
+    // Manual close via X button
+    document.getElementById('closeBtn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeReminder();
+    });
+
+    // Auto-close safety fallback after 2 minutes (120,000 ms) if ignored
+    setTimeout(() => {
+      closeReminder();
+    }, 120000);
+  </script>
+
+</body>
+</html>
