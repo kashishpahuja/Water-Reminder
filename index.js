@@ -23,7 +23,7 @@ function loadSettings() {
   } catch (err) {
     console.error('Failed to load settings', err);
   }
-  return { intervalMinutes: 20, gifPath: 'kashish1.gif' };
+  return { intervalMinutes: 20, gifPath: 'crow.gif' };
 }
 
 function saveSettings(newSettings) {
@@ -43,13 +43,13 @@ function createReminderWindow() {
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width, height } = primaryDisplay.workAreaSize;
 
-  const windowWidth = 500;
+  const windowWidth = width;
   const windowHeight = height;
 
   reminderWindow = new BrowserWindow({
     width: windowWidth,
     height: windowHeight,
-    x: width - windowWidth,
+    x: 0, 
     y: 0,
     frame: false,
     transparent: true,
@@ -62,6 +62,9 @@ function createReminderWindow() {
   });
 
   reminderWindow.loadFile('index.html');
+
+  // Ignore mouse events globally across the full screen so background apps work normally
+  reminderWindow.setIgnoreMouseEvents(true, { forward: true });
 
   reminderWindow.on('closed', () => {
     reminderWindow = null;
@@ -91,7 +94,7 @@ function createSettingsWindow() {
   });
 }
 
-// Function to schedule timer dynamically (minutes parameter passed directly)
+// Function to schedule timer dynamically
 function scheduleReminderTimer(minutes) {
   if (reminderTimer) clearInterval(reminderTimer);
 
@@ -144,13 +147,18 @@ app.whenReady().then(() => {
     if (settingsWindow) settingsWindow.close();
   });
 
+  // Listen for mouse event toggle from frontend container hover
+  ipcMain.on('set-ignore-mouse-events', (event, ignore, options) => {
+    if (reminderWindow) {
+      reminderWindow.setIgnoreMouseEvents(ignore, options);
+    }
+  });
+
   // Listen for actions from the reminder popup buttons
   ipcMain.on('reminder-action', (event, actionType) => {
     if (actionType === 'done') {
-      // User clicked Done (Drank): start full 20-minute interval
       resetReminderTimerToDefault();
     } else if (actionType === 'snooze') {
-      // User clicked Close or ignored: snooze for 5 minutes
       scheduleReminderTimer(5);
     }
   });
@@ -162,7 +170,7 @@ app.whenReady().then(() => {
   resetReminderTimerToDefault();
 
   // Safe tray initialization
-  const iconPath = path.join(__dirname, 'kashish1.gif');
+  const iconPath = path.join(__dirname, 'crow.gif');
   if (fs.existsSync(iconPath)) {
     tray = new Tray(iconPath);
     updateTrayMenu();

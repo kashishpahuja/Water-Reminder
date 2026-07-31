@@ -15,6 +15,229 @@
       pointer-events: none;
     }
 
+    /* Fixed Container at bottom-right corner for Bucket and Button */
+    .bottom-right-container {
+      position: absolute;
+      bottom: 40px;
+      right: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      pointer-events: auto; /* Ensures you can interact with bucket and button */
+      z-index: 10;
+    }
+
+    /* Bucket Image Styling */
+    .bucket-img {
+      height: 90px;
+      width: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.4));
+    }
+
+    /* Custom Sleek Black & Grey Button Style */
+    button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 8px 18px;
+      color: #ffffff;
+      text-transform: uppercase;
+      cursor: pointer;
+      border: 1px solid #444;
+      letter-spacing: 1px;
+      font-weight: 600;
+      font-size: 15px;
+      background-color: #1a1a1a;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.5s ease;
+      box-shadow: 0px 6px 15px rgba(0, 0, 0, 0.4);
+    }
+
+    button:active {
+      transform: scale(0.9);
+      transition: all 100ms ease;
+    }
+
+    button svg {
+      transition: all 0.5s ease;
+      z-index: 2;
+    }
+
+    .play {
+      transition: all 0.5s ease;
+      transition-delay: 300ms;
+    }
+
+    button:hover {
+      background-color: #333333;
+      border-color: #666;
+    }
+
+    button:hover svg {
+      transform: scale(2.5) translate(40%);
+    }
+
+    .now {
+      position: absolute;
+      left: 0;
+      transform: translateX(-100%);
+      transition: all 0.5s ease;
+      z-index: 2;
+    }
+
+    button:hover .now {
+      transform: translateX(12px);
+      transition-delay: 300ms;
+    }
+
+    button:hover .play {
+      transform: translateX(200%);
+      transition-delay: 300ms;
+    }
+
+    /* Crow Flying Container - Positioned to the left of the bucket (before it) */
+    .anime-character-container {
+      position: absolute;
+      bottom: 35px;
+      right: 30px; /* Positioned further left so it stops before the bucket */
+      height: 310px;
+      width: auto;
+      z-index: 5;
+      pointer-events: none;
+      animation: flySlowlyToBucket 8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .anime-character-container.exit {
+      animation: flyAwayScreen 1.2s ease-in forwards;
+    }
+
+    .anime-character-container img {
+      height: 310px;
+      width: auto;
+      object-fit: contain;
+      transform: scaleX(-1); /* Flips the crow horizontally to face rightwards towards the bucket */
+      filter: drop-shadow(0 20px 25px rgba(0, 0, 0, 0.5));
+      pointer-events: none;
+    }
+
+    @keyframes flySlowlyToBucket {
+      0% {
+        transform: translateX(-120vw);
+        opacity: 1;
+      }
+      100% {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes flyAwayScreen {
+      0% {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      100% {
+        transform: translateX(120vw);
+        opacity: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Bottom Right Corner: Bucket + Button Stacked -->
+  <div class="bottom-right-container">
+    <img id="bucketImg" src="bucket.gif" alt="Water Bucket" class="bucket-img">
+    
+    <button id="doneBtn" title="Close">
+      <span class="now">done!</span>
+      <span class="play">Close</span>
+    </button>
+  </div>
+
+  <!-- Crow Animation flying from left to right (stopping right before the bucket) -->
+  <div class="anime-character-container" id="character">
+    <img id="reminderGif" src="crow.gif" alt="Water Reminder">
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+
+    ipcRenderer.invoke('get-settings').then((settings) => {
+      if (settings && settings.gifPath) {
+        document.getElementById('reminderGif').src = settings.gifPath;
+      }
+    }).catch((err) => {
+      console.error('Failed to load settings in view:', err);
+    });
+
+    const character = document.getElementById('character');
+    let actionTriggered = false;
+
+    function triggerExit(actionType) {
+      if (actionTriggered) return;
+      actionTriggered = true;
+      
+      character.classList.add('exit');
+      ipcRenderer.send('reminder-action', actionType);
+
+      setTimeout(() => {
+        window.close();
+      }, 1200); 
+    }
+
+    // Button clicked -> Triggers 'done' action (resets full 20-minute interval)
+    document.getElementById('doneBtn').addEventListener('click', () => {
+      triggerExit('done');
+    });
+
+    // Fix clickability passing through transparent window frames
+    const interactiveContainer = document.querySelector('.bottom-right-container');
+    interactiveContainer.addEventListener('mouseenter', () => {
+      ipcRenderer.send('set-ignore-mouse-events', false);
+    });
+    interactiveContainer.addEventListener('mouseleave', () => {
+      ipcRenderer.send('set-ignore-mouse-events', true, { forward: true });
+    });
+
+    // Auto-close safety fallback after 2 minutes if ignored (defaults to snooze action)
+    setTimeout(() => {
+      triggerExit('snooze');
+    }, 120000);
+  </script>
+
+</body>
+</html>
+
+
+
+
+
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Water Reminder - Animation</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      user-select: none;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      pointer-events: none;
+    }
+
     .anime-character-container {
       position: absolute;
       top: 50%;
@@ -95,7 +318,7 @@
 <body>
 
   <div class="anime-character-container" id="character">
-    <img id="reminderGif" src="kashish1.gif" alt="Water Reminder">
+    <img id="reminderGif" src="crow.gif" alt="Water Reminder">
     <div class="button-container">
       <button class="action-btn close-action-btn" id="closeBtn">Close</button>
       <button class="action-btn done-action-btn" id="doneBtn">Drank</button>
@@ -144,4 +367,4 @@
   </script>
 
 </body>
-</html>
+</html> -->
