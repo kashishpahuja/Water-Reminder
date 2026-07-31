@@ -13,7 +13,7 @@
     "files": [
       "index.js",
       "index.html",
-      "kashish.gif"
+      "kashish1.gif"
     ],
     "win": {
       "target": "nsis"

@@ -23,7 +23,7 @@ function loadSettings() {
   } catch (err) {
     console.error('Failed to load settings', err);
   }
-  return { intervalMinutes: 20, gifPath: 'kashish.gif' };
+  return { intervalMinutes: 20, gifPath: 'kashish1.gif' };
 }
 
 function saveSettings(newSettings) {
@@ -63,9 +63,6 @@ function createReminderWindow() {
 
   reminderWindow.loadFile('index.html');
 
-  // REMOVE OR COMMENT OUT THIS LINE: 
-  // reminderWindow.setIgnoreMouseEvents(true, { forward: true });
-
   reminderWindow.on('closed', () => {
     reminderWindow = null;
   });
@@ -94,14 +91,12 @@ function createSettingsWindow() {
   });
 }
 
-function resetReminderTimer() {
+// Function to schedule timer dynamically (minutes parameter passed directly)
+function scheduleReminderTimer(minutes) {
   if (reminderTimer) clearInterval(reminderTimer);
 
-  const settings = loadSettings();
-  const minutes = settings.intervalMinutes && settings.intervalMinutes >= 1 ? settings.intervalMinutes : 20;
   const intervalTime = minutes * 60 * 1000;
-
-  console.log(`Reminder scheduled every ${minutes} minute(s).`);
+  console.log(`Next reminder scheduled in ${minutes} minute(s).`);
 
   reminderTimer = setInterval(() => {
     if (!isPaused) {
@@ -110,27 +105,32 @@ function resetReminderTimer() {
   }, intervalTime);
 }
 
+// Reset using user settings default (20 mins or custom)
+function resetReminderTimerToDefault() {
+  const settings = loadSettings();
+  const minutes = settings.intervalMinutes && settings.intervalMinutes >= 1 ? settings.intervalMinutes : 20;
+  scheduleReminderTimer(minutes);
+}
+
 function updateTrayMenu() {
   if (!tray) return;
   const contextMenu = Menu.buildFromTemplate([
     { label: 'Water Reminder Active', enabled: false },
     { type: 'separator' },
-    { 
-      label: isPaused ? '▶ Resume Reminders' : '⏸ Pause Reminders', 
-      click: () => {
-        isPaused = !isPaused;
-        updateTrayMenu();
-      } 
-    },
     { label: '⚙ Settings', click: () => createSettingsWindow() },
     { type: 'separator' },
     { label: '❌ Exit App', click: () => { app.isQuitting = true; app.quit(); } }
   ]);
   tray.setContextMenu(contextMenu);
-  tray.setToolTip(isPaused ? 'Water Reminder (Paused)' : 'Water Reminder (Running)');
+  tray.setToolTip('Water Reminder (Running)');
 }
 
 app.whenReady().then(() => {
+  app.setLoginItemSettings({
+    openAtLogin: true,
+    path: process.execPath
+  });
+
   ipcMain.handle('get-settings', async () => {
     return loadSettings();
   });
@@ -140,18 +140,29 @@ app.whenReady().then(() => {
       intervalMinutes: data.interval,
       gifPath: data.gifPath
     });
-    resetReminderTimer();
+    resetReminderTimerToDefault();
     if (settingsWindow) settingsWindow.close();
+  });
+
+  // Listen for actions from the reminder popup buttons
+  ipcMain.on('reminder-action', (event, actionType) => {
+    if (actionType === 'done') {
+      // User clicked Done (Drank): start full 20-minute interval
+      resetReminderTimerToDefault();
+    } else if (actionType === 'snooze') {
+      // User clicked Close or ignored: snooze for 5 minutes
+      scheduleReminderTimer(5);
+    }
   });
 
   // 1. Show immediately on start
   createReminderWindow();
 
-  // 2. Start the 20-minute interval loop for subsequent triggers
-  resetReminderTimer();
+  // 2. Start the default interval loop
+  resetReminderTimerToDefault();
 
   // Safe tray initialization
-  const iconPath = path.join(__dirname, 'kashish.gif');
+  const iconPath = path.join(__dirname, 'kashish1.gif');
   if (fs.existsSync(iconPath)) {
     tray = new Tray(iconPath);
     updateTrayMenu();

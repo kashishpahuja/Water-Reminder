@@ -25,6 +25,9 @@
       z-index: 5;
       pointer-events: none;
       animation: slideIn 1s ease-out forwards;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
     .anime-character-container.exit {
@@ -32,36 +35,50 @@
     }
 
     .anime-character-container img {
-      height: 100%;
+      height: 260px;
       width: auto;
       object-fit: contain;
       filter: drop-shadow(-15px 15px 20px rgba(0, 0, 0, 0.4));
       pointer-events: none;
     }
 
-    .close-btn {
-      position: absolute;
-      top: 0;
-      right: 20px;
-      background: rgba(0, 0, 0, 0.6);
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 32px;
-      height: 32px;
-      font-size: 16px;
-      font-weight: bold;
-      cursor: pointer;
+    /* Button Container below the character/gif */
+    .button-container {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 0.2s;
-      pointer-events: auto;
+      gap: 10px;
+      margin-top: 10px;
+      pointer-events: auto; /* Ensures you can click the buttons */
       z-index: 10;
     }
 
-    .close-btn:hover {
-      background: rgba(255, 0, 0, 0.8);
+    .action-btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      color: white;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      transition: transform 0.2s, background 0.2s;
+    }
+
+    .action-btn:hover {
+      transform: scale(1.05);
+    }
+
+    .close-action-btn {
+      background: rgba(100, 100, 100, 0.85);
+    }
+    .close-action-btn:hover {
+      background: rgba(150, 150, 150, 0.95);
+    }
+
+    .done-action-btn {
+      background: rgba(0, 150, 255, 0.9);
+    }
+    .done-action-btn:hover {
+      background: rgba(0, 120, 220, 1);
     }
 
     @keyframes slideIn {
@@ -78,11 +95,14 @@
 <body>
 
   <div class="anime-character-container" id="character">
-    <button class="close-btn" id="closeBtn">×</button>
-    <img id="reminderGif" src="kashish.gif" alt="Water Reminder">
+    <img id="reminderGif" src="kashish1.gif" alt="Water Reminder">
+    <div class="button-container">
+      <button class="action-btn close-action-btn" id="closeBtn">Close</button>
+      <button class="action-btn done-action-btn" id="doneBtn">Drank</button>
+    </div>
   </div>
 
-<script>
+  <script>
     const { ipcRenderer } = require('electron');
 
     ipcRenderer.invoke('get-settings').then((settings) => {
@@ -95,25 +115,31 @@
 
     const character = document.getElementById('character');
 
-    function closeReminder() {
-      // Prevent multiple click triggers if clicked twice quickly
+    function triggerExit(actionType) {
       if (character.classList.contains('exit')) return;
-      
       character.classList.add('exit');
+      
+      // Tell main process which button was clicked (snooze 5 mins or reset 20 mins)
+      ipcRenderer.send('reminder-action', actionType);
+
       setTimeout(() => {
         window.close();
       }, 1000); 
     }
 
-    // Manual close via X button
-    document.getElementById('closeBtn').addEventListener('click', (e) => {
-      e.stopPropagation();
-      closeReminder();
+    // Close clicked -> Snooze for 5 minutes
+    document.getElementById('closeBtn').addEventListener('click', () => {
+      triggerExit('snooze');
     });
 
-    // Auto-close safety fallback after 2 minutes (120,000 ms) if ignored
+    // Done clicked -> Reset timer for 20 minutes
+    document.getElementById('doneBtn').addEventListener('click', () => {
+      triggerExit('done');
+    });
+
+    // Auto-close safety fallback after 2 minutes (120,000 ms) if ignored (defaults to snooze action)
     setTimeout(() => {
-      closeReminder();
+      triggerExit('snooze');
     }, 120000);
   </script>
 
