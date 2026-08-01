@@ -13,7 +13,8 @@
     "files": [
       "index.js",
       "index.html",
-      "crow.gif"
+      "crow.gif",
+      "bucket.gif"
     ],
     "win": {
       "target": "nsis"
